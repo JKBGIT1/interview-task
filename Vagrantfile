@@ -1,0 +1,42 @@
+Vagrant.configure("2") do |config|
+  workers_count = 2
+  masters_count = 1
+
+  masters_count.times do |i|
+    master_name = "master-#{i + 1}"
+    master_config = {
+      ip: "192.168.56.#{10 + i}",
+      cpus: 2,
+      memory: 4096
+    }
+    config.vm.define master_name do |master|
+      master.vm.box = "bento/ubuntu-24.04"
+      master.vm.box_version = "202510.26.0"
+      master.vm.hostname = master_name
+      master.vm.network "private_network", ip: master_config[:ip]
+      master.vm.provider "virtualbox" do |vb|
+        vb.cpus = master_config[:cpus]
+        vb.memory = master_config[:memory]
+      end
+    end
+  end
+
+  workers_count.times do |i|
+    worker_name = "worker-#{i + 1}"
+    worker_config = {
+      ip: "192.168.56.#{10 + masters_count + i}",
+      cpus: 2,
+      memory: 4096
+    }
+    config.vm.define worker_name do |worker|
+      worker.vm.box = "bento/ubuntu-24.04"
+      worker.vm.box_version = "202510.26.0"
+      worker.vm.hostname = worker_name
+      worker.vm.network "private_network", ip: worker_config[:ip]
+      worker.vm.provider "virtualbox" do |vb|
+        vb.cpus = worker_config[:cpus]
+        vb.memory = worker_config[:memory]
+      end
+    end
+  end
+end

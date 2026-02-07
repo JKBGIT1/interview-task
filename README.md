@@ -1,4 +1,12 @@
-## Vagrant
+# brightpick-interview-task
+
+## Installations
+
+### VirtualBox
+
+Install VirtualBox 7.2.6 following https://www.virtualbox.org/wiki/Downloads
+
+### Vagrant
 
 Download Vagrant by running the commands below on a debian based linux. Otherwise follow https://developer.hashicorp.com/vagrant/install#linux. and don't forget to install version 2.4.9.
 
@@ -19,3 +27,7 @@ You should expect the following output
 ```
 Vagrant 2.4.9
 ```
+
+### TalosOS
+
+Put aside the Talos OS on VirtualBox spawned by Vagrant due to the missing support for `config.vm.communicator = :none` https://github.com/hashicorp/vagrant/issues/13619
