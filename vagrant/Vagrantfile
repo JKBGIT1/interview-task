@@ -29,7 +29,7 @@ Vagrant.configure("2") do |config|
     yaml_data["controlPlane"]["hosts"].push(
       {
         "privateAddress" => master_config[:ip],
-        "sshUserName" => "vagrant",
+        "sshUsername" => "vagrant",
         "sshPrivateKeyFile" => "../vagrant/.vagrant/machines/#{master_name}/virtualbox/private_key",
         "taints" => [
           {
@@ -70,7 +70,7 @@ Vagrant.configure("2") do |config|
     yaml_data["staticWorkers"]["hosts"].push(
       {
         "privateAddress" => worker_config[:ip],
-        "sshUserName" => "vagrant",
+        "sshUsername" => "vagrant",
         "sshPrivateKeyFile" => "../vagrant/.vagrant/machines/#{worker_name}/virtualbox/private_key"
       }
     )

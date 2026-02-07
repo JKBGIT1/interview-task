@@ -9,7 +9,7 @@ cloudProvider:
 controlPlane:
   hosts:
   - privateAddress: 192.168.56.10
-    sshUserName: vagrant
+    sshUsername: vagrant
     sshPrivateKeyFile: "../vagrant/.vagrant/machines/master-1/virtualbox/private_key"
     taints:
     - key: node-role.kubernetes.io/control-plane
@@ -17,10 +17,10 @@ controlPlane:
 staticWorkers:
   hosts:
   - privateAddress: 192.168.56.11
-    sshUserName: vagrant
+    sshUsername: vagrant
     sshPrivateKeyFile: "../vagrant/.vagrant/machines/worker-1/virtualbox/private_key"
   - privateAddress: 192.168.56.12
-    sshUserName: vagrant
+    sshUsername: vagrant
     sshPrivateKeyFile: "../vagrant/.vagrant/machines/worker-2/virtualbox/private_key"
 apiEndpoint:
   host: 192.168.56.10
