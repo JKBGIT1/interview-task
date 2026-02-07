@@ -2,6 +2,10 @@ Vagrant.configure("2") do |config|
   workers_count = 2
   masters_count = 1
 
+  if masters_count.even? || masters_count < 1
+    raise "Masters count must be an odd number greater than 0"
+  end
+
   masters_count.times do |i|
     master_name = "master-#{i + 1}"
     master_config = {
