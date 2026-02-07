@@ -12,7 +12,7 @@ clusterNetwork:
       enableHubble: true
 controlPlane:
   hosts:
-  - privateAddress: 192.168.56.10
+  - privateAddress: 192.168.56.3
     sshUsername: vagrant
     sshPrivateKeyFile: "../vagrant/.vagrant/machines/master-1/virtualbox/private_key"
     taints:
@@ -20,14 +20,14 @@ controlPlane:
       effect: NoSchedule
 staticWorkers:
   hosts:
-  - privateAddress: 192.168.56.11
+  - privateAddress: 192.168.56.4
     sshUsername: vagrant
     sshPrivateKeyFile: "../vagrant/.vagrant/machines/worker-1/virtualbox/private_key"
-  - privateAddress: 192.168.56.12
+  - privateAddress: 192.168.56.5
     sshUsername: vagrant
     sshPrivateKeyFile: "../vagrant/.vagrant/machines/worker-2/virtualbox/private_key"
 apiEndpoint:
-  host: 192.168.56.10
+  host: 192.168.56.3
   port: 6443
 machineController:
   deploy: false
