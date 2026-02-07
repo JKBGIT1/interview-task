@@ -1,3 +1,4 @@
 resources:
 - ./flux-system
 - ./argocd
+- ./envoy
