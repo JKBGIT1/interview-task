@@ -1,19 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: web-app
+  name: root-infra
   namespace: argocd
-  finalizers:
-    - argocd.argoproj.io/resources-finalizer
 spec:
   project: default
   source:
     repoURL: https://github.com/JKBGIT1/brightpick-interview-task.git
     targetRevision: feat/deploy-web-app-and-set-up-gitops
-    path: k8s/web-app
+    path: k8s/infra
+    directory:
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
-    namespace: web-app
+    namespace: argocd
   syncPolicy:
     automated:
       selfHeal: true
