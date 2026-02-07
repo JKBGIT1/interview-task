@@ -1,0 +1,93 @@
+require 'yaml'
+
+workers_count = 2
+masters_count = 1
+
+if masters_count.even? || masters_count < 1
+  raise "Masters count must be an odd number greater than 0"
+end
+
+# load kubeone.yaml
+config_file = File.join(File.dirname(__FILE__), "../kubeone/kubeone.yaml")
+unless File.exist?(config_file)
+  raise "Configuration file kubeone.yaml not found in ../kubeone directory"
+end
+
+yaml_data = YAML.load_file(config_file)
+yaml_data["controlPlane"]["hosts"] = []
+yaml_data["staticWorkers"]["hosts"] = []
+
+Vagrant.configure("2") do |config|
+  masters_count.times do |i|
+    master_name = "master-#{i + 1}"
+    master_config = {
+      ip: "192.168.56.#{10 + i}",
+      cpus: 2,
+      memory: 4096
+    }
+
+    yaml_data["controlPlane"]["hosts"].push(
+      {
+        "privateAddress" => master_config[:ip],
+        "sshUsername" => "vagrant",
+        "sshPrivateKeyFile" => "../vagrant/.vagrant/machines/#{master_name}/virtualbox/private_key",
+        "taints" => [
+          {
+            "key" => "node-role.kubernetes.io/control-plane",
+            "effect" => "NoSchedule"
+          }
+        ]
+      }
+    )
+
+    if i == 0
+      yaml_data["apiEndpoint"] = {
+        "host" => master_config[:ip],
+        "port" => 6443
+      }
+    end
+
+    config.vm.define master_name do |master|
+      master.vm.box = "bento/ubuntu-24.04"
+      master.vm.box_version = "202510.26.0"
+      master.vm.hostname = master_name
+      master.vm.network "private_network", ip: master_config[:ip]
+      master.vm.provider "virtualbox" do |vb|
+        vb.cpus = master_config[:cpus]
+        vb.memory = master_config[:memory]
+      end
+    end
+  end
+
+  workers_count.times do |i|
+    worker_name = "worker-#{i + 1}"
+    worker_config = {
+      ip: "192.168.56.#{10 + masters_count + i}",
+      cpus: 2,
+      memory: 4096
+    }
+
+    yaml_data["staticWorkers"]["hosts"].push(
+      {
+        "privateAddress" => worker_config[:ip],
+        "sshUsername" => "vagrant",
+        "sshPrivateKeyFile" => "../vagrant/.vagrant/machines/#{worker_name}/virtualbox/private_key"
+      }
+    )
+
+    config.vm.define worker_name do |worker|
+      worker.vm.box = "bento/ubuntu-24.04"
+      worker.vm.box_version = "202510.26.0"
+      worker.vm.hostname = worker_name
+      worker.vm.network "private_network", ip: worker_config[:ip]
+      worker.vm.provider "virtualbox" do |vb|
+        vb.cpus = worker_config[:cpus]
+        vb.memory = worker_config[:memory]
+      end
+    end
+  end
+
+  File.open(config_file, "w") do |file|
+    file.write(yaml_data.to_yaml)
+  end
+end

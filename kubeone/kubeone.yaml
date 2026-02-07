@@ -1,0 +1,29 @@
+---
+apiVersion: kubeone.k8c.io/v1beta2
+kind: KubeOneCluster
+name: brightpick-interview-task
+versions:
+  kubernetes: 1.34.1
+cloudProvider:
+  none: {}
+controlPlane:
+  hosts:
+  - privateAddress: 192.168.56.10
+    sshUsername: vagrant
+    sshPrivateKeyFile: "../vagrant/.vagrant/machines/master-1/virtualbox/private_key"
+    taints:
+    - key: node-role.kubernetes.io/control-plane
+      effect: NoSchedule
+staticWorkers:
+  hosts:
+  - privateAddress: 192.168.56.11
+    sshUsername: vagrant
+    sshPrivateKeyFile: "../vagrant/.vagrant/machines/worker-1/virtualbox/private_key"
+  - privateAddress: 192.168.56.12
+    sshUsername: vagrant
+    sshPrivateKeyFile: "../vagrant/.vagrant/machines/worker-2/virtualbox/private_key"
+apiEndpoint:
+  host: 192.168.56.10
+  port: 6443
+machineController:
+  deploy: false
