@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: web-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/JKBGIT1/brightpick-interview-task.git
+    targetRevision: main
+    path: k8s/web-app
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: web-app
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true

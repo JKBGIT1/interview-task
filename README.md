@@ -32,6 +32,12 @@ Vagrant 2.4.9
 
 Download the kubeone CLI from https://github.com/kubermatic/kubeone/releases/tag/v1.12.3
 
+### Helm
+
+### Kubectl
+
+### Kustomize
+
 ### TalosOS
 
 Put aside the Talos OS on VirtualBox spawned by Vagrant due to the missing support for `config.vm.communicator = :none` https://github.com/hashicorp/vagrant/issues/13619
@@ -42,3 +48,41 @@ Follow the steps below once you finished installation of all required tools to b
 
 1. `cd ./vagrant && vagrant up` - Vagrant creates VMs and sets up `/kubeone/kubeone.yaml` which will be used to spin up K8s. ATM, the downscaling doesn't work. You can scale up by changing values in `workers_count` and `masters_count`.
 2. `cd ./kubeone && kubeone apply -m ./kubeone.yaml` - Spins up K8s cluster on spawned VMs from previous step.
+3. `kubectl get no --kubeconfig ./kubeone/brightpick-interview-task-kubeconfig`
+
+Expected output below
+
+```
+NAME       STATUS   ROLES           AGE   VERSION
+master-1   Ready    control-plane   23m   v1.34.1
+worker-1   Ready    <none>          22m   v1.34.1
+worker-2   Ready    <none>          22m   v1.34.1
+```
+
+4. You have to perform the initial deployment of FluxCD manually.
+
+```
+kustomize build ./k8s/infra/flux-system | k apply -f -
+```
+
+Watch first successful sync
+
+```
+$ k get kustomizations.kustomize.toolkit.fluxcd.io -n flux-system --watch
+NAME    AGE   READY   STATUS
+infra   11m   True    Applied revision: feat/deploy-web-app-and-set-up-gitops@sha1:e3e6327d056d123d1a80cec55438a02b62b0202e
+```
+
+5. Sync ArgoCD has been deployed by FluxCD, you can port forward its dashboard
+
+```
+kubectl port-forward service/argocd-server -n argocd 8080:443
+```
+
+6. Visit http://localhost:8080 and accept the certificate
+
+7. Get the ArgoCD admin password running
+
+```
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+```
