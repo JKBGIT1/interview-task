@@ -32,6 +32,12 @@ Vagrant 2.4.9
 
 Download the kubeone CLI from https://github.com/kubermatic/kubeone/releases/tag/v1.12.3
 
+### Helm
+
+### Kubectl
+
+### Kustomize
+
 ### TalosOS
 
 Put aside the Talos OS on VirtualBox spawned by Vagrant due to the missing support for `config.vm.communicator = :none` https://github.com/hashicorp/vagrant/issues/13619
@@ -51,4 +57,32 @@ NAME       STATUS   ROLES           AGE   VERSION
 master-1   Ready    control-plane   23m   v1.34.1
 worker-1   Ready    <none>          22m   v1.34.1
 worker-2   Ready    <none>          22m   v1.34.1
+```
+
+4. The initial deployment of ArgoCD has to be manual.
+
+```
+helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update
+helm install argocd argo/argo-cd \
+  --namespace argocd \
+  --create-namespace \
+  --values ./k8s/infra/argocd/values.yaml \
+  --version 9.4.1\
+  --wait
+kubectl apply -f ./k8s/argocd-main-app.yaml
+```
+
+5. Port forward ArgoCD dashboard
+
+```
+kubectl port-forward service/argocd-server -n argocd 8080:443
+```
+
+6. Visit http://localhost:8080 and accept the certificate
+
+7. Get the ArgoCD admin password running
+
+```
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 ```
