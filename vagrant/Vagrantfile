@@ -1,11 +1,23 @@
+require 'yaml'
+
+workers_count = 2
+masters_count = 1
+
+if masters_count.even? || masters_count < 1
+  raise "Masters count must be an odd number greater than 0"
+end
+
+# load kubeone.yaml
+config_file = File.join(File.dirname(__FILE__), "../kubeone/kubeone.yaml")
+unless File.exist?(config_file)
+  raise "Configuration file kubeone.yaml not found in ../kubeone directory"
+end
+
+yaml_data = YAML.load_file(config_file)
+yaml_data["controlPlane"]["hosts"] = []
+yaml_data["staticWorkers"]["hosts"] = []
+
 Vagrant.configure("2") do |config|
-  workers_count = 2
-  masters_count = 1
-
-  if masters_count.even? || masters_count < 1
-    raise "Masters count must be an odd number greater than 0"
-  end
-
   masters_count.times do |i|
     master_name = "master-#{i + 1}"
     master_config = {
@@ -13,6 +25,28 @@ Vagrant.configure("2") do |config|
       cpus: 2,
       memory: 4096
     }
+
+    yaml_data["controlPlane"]["hosts"].push(
+      {
+        "privateAddress" => master_config[:ip],
+        "sshUserName" => "vagrant",
+        "sshPrivateKeyFile" => "../vagrant/.vagrant/machines/#{master_name}/virtualbox/private_key",
+        "taints" => [
+          {
+            "key" => "node-role.kubernetes.io/control-plane",
+            "effect" => "NoSchedule"
+          }
+        ]
+      }
+    )
+
+    if i == 0
+      yaml_data["apiEndpoint"] = {
+        "host" => master_config[:ip],
+        "port" => 6443
+      }
+    end
+
     config.vm.define master_name do |master|
       master.vm.box = "bento/ubuntu-24.04"
       master.vm.box_version = "202510.26.0"
@@ -32,6 +66,15 @@ Vagrant.configure("2") do |config|
       cpus: 2,
       memory: 4096
     }
+
+    yaml_data["staticWorkers"]["hosts"].push(
+      {
+        "privateAddress" => worker_config[:ip],
+        "sshUserName" => "vagrant",
+        "sshPrivateKeyFile" => "../vagrant/.vagrant/machines/#{worker_name}/virtualbox/private_key"
+      }
+    )
+
     config.vm.define worker_name do |worker|
       worker.vm.box = "bento/ubuntu-24.04"
       worker.vm.box_version = "202510.26.0"
@@ -42,5 +85,9 @@ Vagrant.configure("2") do |config|
         vb.memory = worker_config[:memory]
       end
     end
+  end
+
+  File.open(config_file, "w") do |file|
+    file.write(yaml_data.to_yaml)
   end
 end

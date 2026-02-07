@@ -28,6 +28,10 @@ You should expect the following output
 Vagrant 2.4.9
 ```
 
+### KubeOne
+
+Download the kubeone CLI from https://github.com/kubermatic/kubeone/releases/tag/v1.12.3
+
 ### TalosOS
 
 Put aside the Talos OS on VirtualBox spawned by Vagrant due to the missing support for `config.vm.communicator = :none` https://github.com/hashicorp/vagrant/issues/13619
