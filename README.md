@@ -42,3 +42,13 @@ Follow the steps below once you finished installation of all required tools to b
 
 1. `cd ./vagrant && vagrant up` - Vagrant creates VMs and sets up `/kubeone/kubeone.yaml` which will be used to spin up K8s. ATM, the downscaling doesn't work. You can scale up by changing values in `workers_count` and `masters_count`.
 2. `cd ./kubeone && kubeone apply -m ./kubeone.yaml` - Spins up K8s cluster on spawned VMs from previous step.
+3. `kubectl get no --kubeconfig ./kubeone/brightpick-interview-task-kubeconfig`
+
+Expected output below
+
+```
+NAME       STATUS   ROLES           AGE   VERSION
+master-1   Ready    control-plane   23m   v1.34.1
+worker-1   Ready    <none>          22m   v1.34.1
+worker-2   Ready    <none>          22m   v1.34.1
+```
