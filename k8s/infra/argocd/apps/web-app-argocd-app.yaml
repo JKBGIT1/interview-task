@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/JKBGIT1/brightpick-interview-task.git
-    targetRevision: feat/deploy-web-app-and-set-up-gitops
+    targetRevision: main
     path: k8s/web-app
     directory:
       recurse: true

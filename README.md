@@ -59,21 +59,21 @@ worker-1   Ready    <none>          22m   v1.34.1
 worker-2   Ready    <none>          22m   v1.34.1
 ```
 
-4. The initial deployment of ArgoCD has to be manual.
+4. You have to perform the initial deployment of FluxCD manually.
 
 ```
-helm repo add argo https://argoproj.github.io/argo-helm
-helm repo update
-helm install argocd argo/argo-cd \
-  --namespace argocd \
-  --create-namespace \
-  --values ./k8s/infra/argocd/values.yaml \
-  --version 9.4.1\
-  --wait
-kubectl apply -f ./k8s/argocd-main-app.yaml
+kustomize build ./k8s/infra/flux-system | k apply -f -
 ```
 
-5. Port forward ArgoCD dashboard
+Watch first successful sync
+
+```
+$ k get kustomizations.kustomize.toolkit.fluxcd.io -n flux-system --watch
+NAME    AGE   READY   STATUS
+infra   11m   True    Applied revision: feat/deploy-web-app-and-set-up-gitops@sha1:e3e6327d056d123d1a80cec55438a02b62b0202e
+```
+
+5. Sync ArgoCD has been deployed by FluxCD, you can port forward its dashboard
 
 ```
 kubectl port-forward service/argocd-server -n argocd 8080:443
