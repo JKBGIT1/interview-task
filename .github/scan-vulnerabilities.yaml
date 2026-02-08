@@ -1,0 +1,43 @@
+name: Scan Vulnerabilities
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'k8s/web-apps/**'
+      - '.github/scan-vulnerabilities.yaml'
+
+jobs:
+  extract-images:
+    runs-on: ubuntu-24.04
+    outputs:
+      images: ${{ steps.parse.outputs.images }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Parse images from manifests
+        id: parse
+        run: |
+          images=$(grep -rh 'image:' k8s/web-apps/ --include='*.yaml' --include='*.yml' \
+            | sed 's/.*image:\s*//' | tr -d '"' | tr -d "'" | sort -u)
+          json=$(echo "$images" | jq -Rc '[., inputs]')
+          echo "images=$json" >> "$GITHUB_OUTPUT"
+
+  scan:
+    needs: extract-images
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        image: ${{ fromJson(needs.extract-images.outputs.images) }}
+      fail-fast: false
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.33
+        with:
+          image-ref: ${{ matrix.image }}
+          format: "table"
+          exit-code: "1"
+          severity: "CRITICAL,HIGH"
+          ignore-unfixed: true
+          vuln-type: "os,library"
