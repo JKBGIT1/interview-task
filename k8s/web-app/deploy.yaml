@@ -33,3 +33,20 @@ spec:
         ports:
         - containerPort: 80
           protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-app
+  namespace: web-app
+  labels:
+    app: web-app
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      nodePort: 30080
+  selector:
+    app: web-app
