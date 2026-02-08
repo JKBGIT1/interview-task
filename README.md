@@ -86,3 +86,62 @@ kubectl port-forward service/argocd-server -n argocd 8080:443
 ```
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 ```
+8. Update the /etc/systemd/resolved.conf by adding
+
+```
+DNS=192.168.56.2
+```
+
+You can now resolve the brightpick.app.test without using the `@192.168.56.2`
+
+```
+$ dig brightpick.app.test
+; <<>> DiG 9.18.39-0ubuntu0.22.04.2-Ubuntu <<>> brightpick.app.test
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 43636
+;; flags: qr rd ra; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 1
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 65494
+;; QUESTION SECTION:
+;brightpick.app.test.           IN      A
+
+;; ANSWER SECTION:
+brightpick.app.test.    24      IN      A       192.168.56.5
+brightpick.app.test.    24      IN      A       192.168.56.4
+
+;; Query time: 1 msec
+;; SERVER: 127.0.0.53#53(127.0.0.53) (UDP)
+;; WHEN: Sun Feb 08 09:32:20 CET 2026
+;; MSG SIZE  rcvd: 80
+```
+
+9. Access the application
+
+```
+$ curl http://brightpick.app.test:30080
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+```
