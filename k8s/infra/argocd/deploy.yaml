@@ -28,11 +28,9 @@ spec:
         name: argo-helm
         namespace: argocd
   install:
-    crds: CreateReplace
     remediation:
       retries: 3
   upgrade:
-    crds: CreateReplace
     remediation:
       retries: 3
   values:

@@ -1,2 +1,2 @@
 resources:
-- web-app-argocd-app.yaml
+- nginx-web-app-argocd-app.yaml

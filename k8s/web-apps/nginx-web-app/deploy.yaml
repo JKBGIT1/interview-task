@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: web-app
+  name: nginx-web-app
   annotations:
     linkerd.io/inject: enabled
 ---
@@ -9,18 +9,18 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: web-app
-  name: web-app
-  namespace: web-app
+    app: nginx-web-app
+  name: nginx-web-app
+  namespace: nginx-web-app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: web-app
+      app: nginx-web-app
   template:
     metadata:
       labels:
-        app: web-app
+        app: nginx-web-app
     spec:
       containers:
       - image: nginx:stable-alpine3.23-slim
@@ -39,10 +39,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: web-app
-  namespace: web-app
+  name: nginx-web-app
+  namespace: nginx-web-app
   labels:
-    app: web-app
+    app: nginx-web-app
 spec:
   type: NodePort
   ports:
@@ -51,4 +51,4 @@ spec:
       targetPort: 80
       nodePort: 30080
   selector:
-    app: web-app
+    app: nginx-web-app
