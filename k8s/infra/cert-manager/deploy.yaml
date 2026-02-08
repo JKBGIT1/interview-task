@@ -1,41 +1,39 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: argocd
+  name: cert-manager
 ---
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: argo-helm
-  namespace: argocd
+  name: jetstack
+  namespace: cert-manager
 spec:
+  type: oci
   interval: 1h
-  url: https://argoproj.github.io/argo-helm
+  url: oci://quay.io/jetstack/charts
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: argocd
-  namespace: argocd
+  name: cert-manager
+  namespace: cert-manager
 spec:
   interval: 10m
   chart:
     spec:
-      chart: argo-cd
-      version: 9.4.1
+      chart: cert-manager
+      version: v1.19.3
       sourceRef:
         kind: HelmRepository
-        name: argo-helm
-        namespace: argocd
+        name: jetstack
+        namespace: cert-manager
   install:
-    crds: CreateReplace
     remediation:
       retries: 3
   upgrade:
-    crds: CreateReplace
     remediation:
       retries: 3
   values:
-    server:
-      service:
-        type: ClusterIP
+    crds:
+      enabled: true

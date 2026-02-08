@@ -1,0 +1,5 @@
+resources:
+- gatewayapi-crds.yaml
+- certificates.yaml
+- deploy.yaml
+
