@@ -3,3 +3,4 @@ resources:
 - ./argocd
 - ./cert-manager
 - ./linkerd
+- ./trivy
