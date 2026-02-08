@@ -7,7 +7,7 @@ spec:
   interval: 5m
   url: https://github.com/JKBGIT1/brightpick-interview-task.git
   ref:
-    branch: feat/scan-images-using-trivy
+    branch: main
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
