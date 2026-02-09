@@ -7,7 +7,7 @@ spec:
   interval: 5m
   url: https://github.com/JKBGIT1/brightpick-interview-task.git
   ref:
-    branch: feat/change-dns-exposure-approach
+    branch: main
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
