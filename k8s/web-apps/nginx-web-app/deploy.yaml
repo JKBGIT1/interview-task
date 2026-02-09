@@ -51,14 +51,34 @@ spec:
   selector:
     app: nginx-web-app
 ---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: nginx-web-app-issuer
+  namespace: nginx-web-app
+spec:
+  selfSigned: {}
+---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: nginx-web-app-gateway
   namespace: nginx-web-app
+  annotations:
+    cert-manager.io/issuer: nginx-web-app-issuer
 spec:
   gatewayClassName: traefik
   listeners:
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    name: websecure
+    port: 8443
+    protocol: HTTPS
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: nginx-web-app-tls
   - allowedRoutes:
       namespaces:
         from: Same
