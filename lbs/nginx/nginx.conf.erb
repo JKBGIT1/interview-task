@@ -1,0 +1,23 @@
+events {}
+
+stream {
+    upstream ingress_https {
+${{ worker_ips:31443 }}
+    }
+
+    upstream ingress_http {
+${{ worker_ips:31080 }}
+    }
+
+    server {
+        listen 443;
+        proxy_pass ingress_https;
+    }
+
+    server {
+        listen 80;
+        proxy_pass ingress_http;
+    }
+}
+
+events {}

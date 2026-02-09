@@ -2,11 +2,21 @@ require 'yaml'
 
 workers_count = 2
 masters_count = 1
+lbs_count = 1
+lbs_starting_ip = 3
 
-starting_octet = 3
+if lbs_starting_ip != 3
+  raise "Load balancers starting IP must be 3"
+end
 
-if starting_octet != 3
-  raise "Keep the starting_octet at 3 to have the most usable IPs for the cluster. The DNS server is using 192.168.56.2. The rest is for the cluster nodes."
+starting_octet = lbs_starting_ip + lbs_count
+
+if lbs_count != 1
+  raise "Load balancers count must be exactly 1 for this setup"
+end
+
+if starting_octet < lbs_starting_ip + lbs_count
+  raise "Keep the starting_octet at #{lbs_starting_ip + lbs_count}"
 end
 
 if masters_count.even? || masters_count < 1
@@ -22,6 +32,15 @@ end
 yaml_data = YAML.load_file(config_file)
 yaml_data["controlPlane"]["hosts"] = []
 yaml_data["staticWorkers"]["hosts"] = []
+
+worker_ips = workers_count.times.map { |i| "192.168.56.#{starting_octet + masters_count + i}" }
+
+nginx_template_file = File.join(File.dirname(__FILE__), "../lbs/nginx/nginx.conf.erb")
+nginx_output_file = File.join(File.dirname(__FILE__), "../lbs/nginx/nginx.conf")
+nginx_conf = File.read(nginx_template_file)
+nginx_conf.gsub!("${{ worker_ips:31443 }}", worker_ips.map { |ip| "        server #{ip}:31443;" }.join("\n"))
+nginx_conf.gsub!("${{ worker_ips:31080 }}", worker_ips.map { |ip| "        server #{ip}:31080;" }.join("\n"))
+File.open(nginx_output_file, "w") { |f| f.write(nginx_conf) }
 
 Vagrant.configure("2") do |config|
   masters_count.times do |i|
@@ -97,6 +116,42 @@ Vagrant.configure("2") do |config|
     file.write(yaml_data.to_yaml)
   end
 
+  lbs_count.times do |i|
+    lb_name = "lb-#{i + 1}"
+    lb_config = {
+      ip: "192.168.56.#{3 + i}",
+      cpus: 1,
+      memory: 1024
+    }
+
+    config.vm.define lb_name do |lb|
+      lb.vm.box = "bento/ubuntu-24.04"
+      lb.vm.box_version = "202510.26.0"
+      lb.vm.hostname = lb_name
+      lb.vm.network "private_network", ip: lb_config[:ip]
+      lb.vm.provider "virtualbox" do |vb|
+        vb.cpus = lb_config[:cpus]
+        vb.memory = lb_config[:memory]
+      end
+      
+      lb.vm.synced_folder "../lbs", "/opt/lbs"
+
+      lb.vm.provision "shell", inline: <<-SHELL
+        apt-get update
+        apt-get install -y ca-certificates curl
+        install -m 0755 -d /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+        chmod a+r /etc/apt/keyrings/docker.asc
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+        apt-get update
+        apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        systemctl enable docker
+        systemctl start docker
+        cd /opt/lbs && docker compose up -d
+      SHELL
+    end
+  end
+
   config.vm.define "dns-server" do |dns|
     dns.vm.box = "bento/ubuntu-24.04"
     dns.vm.box_version = "202510.26.0"
@@ -107,17 +162,17 @@ Vagrant.configure("2") do |config|
       vb.memory = 1024
     end
 
-    # Build dnsmasq config with worker IPs for round-robin
+    # Build dnsmasq config with LBs' IPs for round-robin
     dnsmasq_config = "# disable dns forwarding for .test domain\n"
     dnsmasq_config += "local=/test/\n"
     dnsmasq_config += "local-ttl=30\n"
     dnsmasq_config += "log-queries\n"
     dnsmasq_config += "log-facility=/var/log/dnsmasq.log\n"
 
-    # Add worker addresses for round-robin DNS on *.app.test
-    workers_count.times do |i|
-      worker_ip = "192.168.56.#{starting_octet + masters_count + i}"
-      dnsmasq_config += "address=/*.app.test/#{worker_ip}\n"
+    # Add LBs' addresses for round-robin DNS on *.app.test
+    lbs_count.times do |i|
+      lb_ip = "192.168.56.#{lbs_starting_ip + i}"
+      dnsmasq_config += "address=/*.app.test/#{lb_ip}\n"
     end
 
     dns.vm.provision "shell", inline: <<-SHELL

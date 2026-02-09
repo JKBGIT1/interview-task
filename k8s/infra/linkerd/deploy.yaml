@@ -47,8 +47,6 @@ metadata:
 spec:
   dependsOn:
     - name: linkerd-crds
-    - name: cert-manager
-      namespace: cert-manager
   interval: 10m
   chart:
     spec:
