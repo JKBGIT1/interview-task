@@ -23,6 +23,7 @@ spec:
         app: nginx-web-app
     spec:
       securityContext:
+        runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 3000
         fsGroup: 2000
@@ -110,3 +111,38 @@ spec:
       backendRefs:
         - name: nginx-web-app
           port: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: nginx-web-app-network-policy
+  namespace: nginx-web-app
+spec:
+  podSelector:
+    matchLabels:
+      app: nginx-web-app
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: traefik
+    - podSelector:
+        matchLabels:
+          role: frontend
+    ports:
+    - protocol: TCP
+      port: 80
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: traefik
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/instance: traefik-traefik
+    ports:
+    - protocol: TCP
+      port: 80
