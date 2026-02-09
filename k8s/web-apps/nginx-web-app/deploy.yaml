@@ -44,11 +44,29 @@ metadata:
   labels:
     app: nginx-web-app
 spec:
-  type: NodePort
   ports:
     - name: http
       port: 80
       targetPort: 80
-      nodePort: 30080
   selector:
     app: nginx-web-app
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: nginx-web-app
+  namespace: nginx-web-app
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+  hostnames:
+    - brightpick.app.test
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: nginx-web-app
+          port: 80
