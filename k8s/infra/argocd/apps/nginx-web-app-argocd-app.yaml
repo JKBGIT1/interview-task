@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/JKBGIT1/brightpick-interview-task.git
-    targetRevision: main
+    targetRevision: feat/change-dns-exposure-approach
     path: k8s/web-apps/nginx-web-app
     directory:
       recurse: true
