@@ -1,2 +1,12 @@
 resources:
 - https://github.com/cert-manager/cert-manager/releases/download/v1.19.3/cert-manager.yaml
+
+patches:
+- target:
+    kind: Deployment
+    name: cert-manager
+    namespace: cert-manager
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --enable-gateway-api
