@@ -38,8 +38,8 @@ worker_ips = workers_count.times.map { |i| "192.168.56.#{starting_octet + master
 nginx_template_file = File.join(File.dirname(__FILE__), "../lbs/nginx/nginx.conf.erb")
 nginx_output_file = File.join(File.dirname(__FILE__), "../lbs/nginx/nginx.conf")
 nginx_conf = File.read(nginx_template_file)
-nginx_conf.gsub!("${{ worker_ips:443 }}", worker_ips.map { |ip| "        server #{ip}:443;" }.join("\n"))
-nginx_conf.gsub!("${{ worker_ips:80 }}", worker_ips.map { |ip| "        server #{ip}:80;" }.join("\n"))
+nginx_conf.gsub!("${{ worker_ips:31443 }}", worker_ips.map { |ip| "        server #{ip}:31443;" }.join("\n"))
+nginx_conf.gsub!("${{ worker_ips:31080 }}", worker_ips.map { |ip| "        server #{ip}:31080;" }.join("\n"))
 File.open(nginx_output_file, "w") { |f| f.write(nginx_conf) }
 
 Vagrant.configure("2") do |config|

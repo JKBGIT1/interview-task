@@ -2,5 +2,6 @@ resources:
 - ./flux-system
 - ./argocd
 - ./cert-manager
-- ./linkerd
+- ./linkerd # cert-manager has to install its CRDs first
 - ./trivy
+- ./traefik # linkerd has to install the Gateway API CRDs first
