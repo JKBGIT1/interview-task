@@ -22,6 +22,10 @@ spec:
       labels:
         app: nginx-web-app
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
       containers:
       - image: nginx:stable-alpine3.23-slim
         name: nginx
