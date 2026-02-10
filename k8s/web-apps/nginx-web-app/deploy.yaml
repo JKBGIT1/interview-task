@@ -147,72 +147,66 @@ spec:
         - name: nginx-web-app
           port: 80
 ---
-# apiVersion: networking.k8s.io/v1
-# kind: NetworkPolicy
-# metadata:
-#   name: nginx-web-app-network-policy
-#   namespace: nginx-web-app
-# spec:
-#   podSelector:
-#     matchLabels:
-#       app: nginx-web-app
-#   policyTypes:
-#   - Ingress
-#   - Egress
-#   ingress:
-#   - from:
-#     - namespaceSelector:
-#         matchLabels:
-#           kubernetes.io/metadata.name: traefik
-#       podSelector:
-#         matchLabels:
-#           app.kubernetes.io/instance: traefik-traefik
-#     ports:
-#     - protocol: TCP
-#       port: 80
-#   - from:
-#     - namespaceSelector:
-#         matchLabels:
-#           kubernetes.io/metadata.name: linkerd
-#       podSelector:
-#         matchLabels:
-#          {}
-#     #       linkerd.io/proxy-deployment: linkerd-identity
-#     # ports: {}
-#     # - protocol: TCP
-#     #   port: 8080
-#   egress:
-#   - to:
-#     - namespaceSelector:
-#         matchLabels:
-#           kubernetes.io/metadata.name: traefik
-#       podSelector:
-#         matchLabels:
-#           app.kubernetes.io/instance: traefik-traefik
-#     ports:
-#     - protocol: TCP
-#       port: 80
-#   - to:
-#     - namespaceSelector:
-#         matchLabels:
-#           kubernetes.io/metadata.name: linkerd
-#       podSelector:
-#         matchLabels:
-#           {}
-#   # 0 days since it was the DNS
-#   - to:
-#     - namespaceSelector:
-#         matchLabels:
-#           kubernetes.io/metadata.name: kube-system
-#     ports:
-#     - protocol: TCP
-#       port: 53
-#     - protocol: UDP
-#       port: 53
-#     #       linkerd.io/proxy-deployment: linkerd-identity
-#     # ports: {}
-#     # - protocol: TCP
-#     #   port: 8080
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: nginx-web-app-network-policy
+  namespace: nginx-web-app
+spec:
+  podSelector:
+    matchLabels:
+      app: nginx-web-app
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: traefik
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/instance: traefik-traefik
+    ports:
+    - protocol: TCP
+      port: 80
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: linkerd
+    #       linkerd.io/proxy-deployment: linkerd-identity
+    # ports: {}
+    # - protocol: TCP
+    #   port: 8080
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: traefik
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/instance: traefik-traefik
+    ports:
+    - protocol: TCP
+      port: 80
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: linkerd
+  # 0 days since it was the DNS
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+    #       linkerd.io/proxy-deployment: linkerd-identity
+    # ports: {}
+    # - protocol: TCP
+    #   port: 8080
 ---
 # binding port 80 in nginx didn't work even with NET_BIND_SERVICE capability
 # 2026/02/10 17:02:23 [emerg] 1#1: bind() to 0.0.0.0:80 failed (13: Permission denied)
