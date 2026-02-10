@@ -172,10 +172,11 @@ spec:
           kubernetes.io/metadata.name: linkerd
     - podSelector:
         matchLabels:
-          linkerd.io/proxy-deployment: linkerd-identity
-    ports:
-    - protocol: TCP
-      port: 8080
+         {}
+    #       linkerd.io/proxy-deployment: linkerd-identity
+    ports: {}
+    # - protocol: TCP
+    #   port: 8080
   egress:
   - to:
     - namespaceSelector:
@@ -193,7 +194,8 @@ spec:
           kubernetes.io/metadata.name: linkerd
     - podSelector:
         matchLabels:
-          linkerd.io/proxy-deployment: linkerd-identity
-    ports:
-    - protocol: TCP
-      port: 8080
+          {}
+    #       linkerd.io/proxy-deployment: linkerd-identity
+    ports: {}
+    # - protocol: TCP
+    #   port: 8080
