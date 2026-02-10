@@ -1,4 +1,4 @@
-# brightpick-interview-task
+# interview-task
 
 ## Installations
 
