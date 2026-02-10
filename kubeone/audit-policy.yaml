@@ -1,0 +1,165 @@
+
+# taken from https://oneuptime.com/blog/post/2026-01-30-kubernetes-audit-policies/view
+# I decided for this one since its suitable for SOC 2 and similar compliance frameworks according to the blog post
+
+apiVersion: audit.k8s.io/v1
+kind: Policy
+
+# Omit the RequestReceived stage to reduce log volume
+# We still capture the complete request/response cycle
+omitStages:
+  - "RequestReceived"
+
+rules:
+  # ============================================
+  # RULE 1: Skip system health checks
+  # These generate massive log volume with no security value
+  # ============================================
+  - level: None
+    users: ["system:kube-probe"]
+
+  # ============================================
+  # RULE 2: Skip read-only system components
+  # Node and controller manager status checks are noisy
+  # ============================================
+  - level: None
+    userGroups: ["system:nodes"]
+    verbs: ["get", "list", "watch"]
+
+  # ============================================
+  # RULE 3: Skip kubelet read operations
+  # Kubelet constantly reads pod specs - not security relevant
+  # ============================================
+  - level: None
+    users: ["kubelet"]
+    verbs: ["get"]
+    resources:
+      - group: ""
+        resources: ["nodes", "nodes/status"]
+
+  # ============================================
+  # RULE 4: Skip kube-proxy watching endpoints
+  # High volume, low security value
+  # ============================================
+  - level: None
+    users: ["system:kube-proxy"]
+    verbs: ["watch"]
+    resources:
+      - group: ""
+        resources: ["endpoints", "services", "services/status"]
+
+  # ============================================
+  # RULE 5: Log secrets at Metadata level only
+  # NEVER log secret data - compliance violation risk
+  # ============================================
+  - level: Metadata
+    resources:
+      - group: ""
+        resources: ["secrets"]
+
+  # ============================================
+  # RULE 6: Log configmaps at Metadata level
+  # ConfigMaps may contain sensitive configuration
+  # ============================================
+  - level: Metadata
+    resources:
+      - group: ""
+        resources: ["configmaps"]
+
+  # ============================================
+  # RULE 7: Full logging for authentication events
+  # Critical for security investigation
+  # ============================================
+  - level: RequestResponse
+    resources:
+      - group: "authentication.k8s.io"
+        resources: ["tokenreviews"]
+      - group: "authorization.k8s.io"
+        resources: ["subjectaccessreviews", "localsubjectaccessreviews"]
+
+  # ============================================
+  # RULE 8: Full logging for RBAC changes
+  # Track who modified permissions
+  # ============================================
+  - level: RequestResponse
+    verbs: ["create", "update", "patch", "delete"]
+    resources:
+      - group: "rbac.authorization.k8s.io"
+        resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+
+  # ============================================
+  # RULE 9: Log namespace operations
+  # Namespace creation/deletion is a significant event
+  # ============================================
+  - level: RequestResponse
+    verbs: ["create", "delete"]
+    resources:
+      - group: ""
+        resources: ["namespaces"]
+
+  # ============================================
+  # RULE 10: Log pod exec and attach
+  # Critical for detecting unauthorized container access
+  # ============================================
+  - level: RequestResponse
+    resources:
+      - group: ""
+        resources: ["pods/exec", "pods/attach", "pods/portforward"]
+
+  # ============================================
+  # RULE 11: Log persistent volume operations
+  # Track storage provisioning and access
+  # ============================================
+  - level: Request
+    verbs: ["create", "delete", "update"]
+    resources:
+      - group: ""
+        resources: ["persistentvolumes", "persistentvolumeclaims"]
+
+  # ============================================
+  # RULE 12: Log service account token creation
+  # Token creation is a potential privilege escalation vector
+  # ============================================
+  - level: RequestResponse
+    verbs: ["create"]
+    resources:
+      - group: ""
+        resources: ["serviceaccounts/token"]
+
+  # ============================================
+  # RULE 13: Log workload changes in production
+  # Track deployments, daemonsets, statefulsets
+  # ============================================
+  - level: Request
+    verbs: ["create", "update", "patch", "delete"]
+    namespaces: ["production", "kube-system"]
+    resources:
+      - group: "apps"
+        resources: ["deployments", "daemonsets", "statefulsets", "replicasets"]
+
+  # ============================================
+  # RULE 14: Log all delete operations
+  # Deletions are always security relevant
+  # ============================================
+  - level: Request
+    verbs: ["delete", "deletecollection"]
+
+  # ============================================
+  # RULE 15: Log all other write operations at Metadata level
+  # Catch-all for modifications
+  # ============================================
+  - level: Metadata
+    verbs: ["create", "update", "patch"]
+
+  # ============================================
+  # RULE 16: Skip read operations by default
+  # Read operations are too noisy for most compliance needs
+  # ============================================
+  - level: None
+    verbs: ["get", "list", "watch"]
+
+  # ============================================
+  # RULE 17: Catch-all - log everything else at Metadata
+  # Safety net for any missed events
+  # ============================================
+  - level: Metadata
