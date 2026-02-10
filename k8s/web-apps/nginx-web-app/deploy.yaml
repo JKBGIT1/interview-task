@@ -147,61 +147,67 @@ spec:
         - name: nginx-web-app
           port: 80
 ---
-# apiVersion: networking.k8s.io/v1
-# kind: NetworkPolicy
-# metadata:
-#   name: nginx-web-app-network-policy
-#   namespace: nginx-web-app
-# spec:
-#   podSelector:
-#     matchLabels:
-#       app: nginx-web-app
-#   policyTypes:
-#   - Ingress
-#   - Egress
-#   ingress:
-#   - from:
-#     - namespaceSelector:
-#         matchLabels:
-#           kubernetes.io/metadata.name: traefik
-#       podSelector:
-#         matchLabels:
-#           app.kubernetes.io/instance: traefik-traefik
-#     ports:
-#     - protocol: TCP
-#       port: 8080
-#   - from:
-#     - namespaceSelector:
-#         matchLabels:
-#           kubernetes.io/metadata.name: linkerd
-#   - from:
-#     - namespaceSelector:
-#         matchLabels:
-#           kubernetes.io/metadata.name: kube-system
-#   egress:
-#   # AI helped with the DNS
-#   # DNS - must be port-based (no destination selector) because Cilium
-#   # evaluates egress policy against the ClusterIP before DNAT, so
-#   # namespaceSelector won't match the CoreDNS virtual service IP
-#   - ports:
-#     - protocol: UDP
-#       port: 53
-#     - protocol: TCP
-#       port: 53
-#   - to:
-#     - namespaceSelector:
-#         matchLabels:
-#           kubernetes.io/metadata.name: linkerd
-#   - to:
-#     - namespaceSelector:
-#         matchLabels:
-#           kubernetes.io/metadata.name: traefik
-#       podSelector:
-#         matchLabels:
-#           app.kubernetes.io/instance: traefik-traefik
-#     ports:
-#     - protocol: TCP
-#       port: 8080
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: nginx-web-app-network-policy
+  namespace: nginx-web-app
+spec:
+  podSelector:
+    matchLabels:
+      app: nginx-web-app
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: traefik
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/instance: traefik-traefik
+    ports:
+    - protocol: TCP
+      port: 8080
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: linkerd
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+  egress:
+  # AI helped with the DNS
+  # DNS - must be port-based (no destination selector) because Cilium
+  # evaluates egress policy against the ClusterIP before DNAT, so
+  # namespaceSelector won't match the CoreDNS virtual service IP
+  - ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  - to:
+    - ipBlock:
+        cidr: 192.168.56.0/24
+    ports:
+      - protocol: TCP
+        port: 6443
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: linkerd
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: traefik
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/instance: traefik-traefik
+    ports:
+    - protocol: TCP
+      port: 8080
 ---
 # binding port 80 in nginx didn't work even with NET_BIND_SERVICE capability
 # 2026/02/10 17:02:23 [emerg] 1#1: bind() to 0.0.0.0:80 failed (13: Permission denied)
