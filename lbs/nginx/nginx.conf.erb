@@ -1,4 +1,16 @@
+events {}
+
 stream {
+    # 50 concurrent connections per source IP
+    limit_conn_zone $remote_addr zone=per_ip:10m;
+
+    # access logging to stdout with connection metadata
+    log_format stream_log '$remote_addr [$time_local] '
+                          '$protocol $status $bytes_sent $bytes_received '
+                          '$session_time "$upstream_addr"';
+
+    access_log /dev/stdout stream_log;
+
     upstream ingress_https {
 ${{ worker_ips:31443 }}
     }
@@ -10,12 +22,16 @@ ${{ worker_ips:31080 }}
     server {
         listen 443;
         proxy_pass ingress_https;
+        proxy_connect_timeout 5s;
+        proxy_timeout 300s;
+        limit_conn per_ip 50;
     }
 
     server {
         listen 80;
         proxy_pass ingress_http;
+        proxy_connect_timeout 5s;
+        proxy_timeout 300s;
+        limit_conn per_ip 50;
     }
 }
-
-events {}
