@@ -49,15 +49,16 @@ spec:
           capabilities:
             drop:
             - ALL
-            add:
-            - NET_BIND_SERVICE # Allow binding to port 80
           readOnlyRootFilesystem: true
           seccompProfile:
             type: RuntimeDefault
         ports:
-        - containerPort: 80
+        - containerPort: 8080
           protocol: TCP
         volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: default.conf
         - name: tmp
           mountPath: /tmp
         - name: nginx-cache
@@ -65,6 +66,9 @@ spec:
         - name: nginx-run
           mountPath: /var/run/nginx
       volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-web-app-config
       - name: tmp
         emptyDir: {}
       - name: nginx-cache
@@ -83,7 +87,7 @@ spec:
   ports:
     - name: http
       port: 80
-      targetPort: 80
+      targetPort: 8080
   selector:
     app: nginx-web-app
 ---
@@ -209,3 +213,22 @@ spec:
 #     # ports: {}
 #     # - protocol: TCP
 #     #   port: 8080
+---
+# binding port 80 in nginx didn't work even with NET_BIND_SERVICE capability
+# 2026/02/10 17:02:23 [emerg] 1#1: bind() to 0.0.0.0:80 failed (13: Permission denied)
+# nginx: [emerg] bind() to 0.0.0.0:80 failed (13: Permission denied)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-web-app-config
+  namespace: nginx-web-app
+data:
+  default.conf: |
+    server {
+        listen 8080;
+        server_name _;
+        location / {
+            root /usr/share/nginx/html;
+            index index.html index.htm;
+        }
+    }
