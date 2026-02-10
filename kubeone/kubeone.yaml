@@ -6,6 +6,11 @@ versions:
   kubernetes: 1.34.1
 cloudProvider:
   none: {}
+features:
+  staticAuditLog:
+    enable: true
+    config:
+      policyFilePath: audit-policy.yaml
 clusterNetwork:
   cni:
     cilium:

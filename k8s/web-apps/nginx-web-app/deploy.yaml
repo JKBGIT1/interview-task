@@ -4,6 +4,13 @@ metadata:
   name: nginx-web-app
   annotations:
     linkerd.io/inject: enabled
+    # Linkerd uses NET_ADMIN and NET_RAW when injecting the proxy, thus the baseline in enforce
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce-version: v1.34.1
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: v1.34.1
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: v1.34.1
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -22,6 +29,11 @@ spec:
       labels:
         app: nginx-web-app
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
       containers:
       - image: nginx:stable-alpine3.23-slim
         name: nginx
@@ -32,9 +44,37 @@ spec:
           requests:
             cpu: 100m
             memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          seccompProfile:
+            type: RuntimeDefault
         ports:
-        - containerPort: 80
+        - containerPort: 8080
           protocol: TCP
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: default.conf
+        - name: tmp
+          mountPath: /tmp
+        - name: nginx-cache
+          mountPath: /var/cache/nginx
+        - name: nginx-run
+          mountPath: /run
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-web-app-config
+      - name: tmp
+        emptyDir: {}
+      - name: nginx-cache
+        emptyDir: {}
+      - name: nginx-run
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -47,7 +87,7 @@ spec:
   ports:
     - name: http
       port: 80
-      targetPort: 80
+      targetPort: 8080
   selector:
     app: nginx-web-app
 ---
@@ -106,3 +146,84 @@ spec:
       backendRefs:
         - name: nginx-web-app
           port: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: nginx-web-app-network-policy
+  namespace: nginx-web-app
+spec:
+  podSelector:
+    matchLabels:
+      app: nginx-web-app
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: traefik
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/instance: traefik-traefik
+    ports:
+    - protocol: TCP
+      port: 8080
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: linkerd
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+  egress:
+  # AI helped with the DNS
+  # DNS - must be port-based (no destination selector) because Cilium
+  # evaluates egress policy against the ClusterIP before DNAT, so
+  # namespaceSelector won't match the CoreDNS virtual service IP
+  - ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  - to:
+    - ipBlock:
+        cidr: 192.168.56.0/24
+    ports:
+      - protocol: TCP
+        port: 6443
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: linkerd
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: traefik
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/instance: traefik-traefik
+    ports:
+    - protocol: TCP
+      port: 8080
+---
+# binding port 80 in nginx didn't work even with NET_BIND_SERVICE capability
+# 2026/02/10 17:02:23 [emerg] 1#1: bind() to 0.0.0.0:80 failed (13: Permission denied)
+# nginx: [emerg] bind() to 0.0.0.0:80 failed (13: Permission denied)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-web-app-config
+  namespace: nginx-web-app
+data:
+  default.conf: |
+    server {
+        listen 8080;
+        server_name _;
+        location / {
+            root /usr/share/nginx/html;
+            index index.html index.htm;
+        }
+    }
