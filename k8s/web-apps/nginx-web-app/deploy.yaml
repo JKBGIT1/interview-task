@@ -174,7 +174,7 @@ spec:
         matchLabels:
          {}
     #       linkerd.io/proxy-deployment: linkerd-identity
-    ports: {}
+    # ports: {}
     # - protocol: TCP
     #   port: 8080
   egress:
@@ -196,6 +196,6 @@ spec:
         matchLabels:
           {}
     #       linkerd.io/proxy-deployment: linkerd-identity
-    ports: {}
+    # ports: {}
     # - protocol: TCP
     #   port: 8080
