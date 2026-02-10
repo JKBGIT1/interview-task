@@ -21,6 +21,6 @@ spec:
     name: brightpick-infra
   path: ./k8s/infra
   prune: true
-  timeout: 3m
+  timeout: 5m # first installation of helm charts takes a while, especially for Linkerd's charts, because their deployment is interdependent
   wait: true
   healthChecks: []
