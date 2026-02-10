@@ -64,7 +64,7 @@ spec:
         - name: nginx-cache
           mountPath: /var/cache/nginx
         - name: nginx-run
-          mountPath: /var/run/nginx
+          mountPath: /run
       volumes:
       - name: nginx-config
         configMap:
