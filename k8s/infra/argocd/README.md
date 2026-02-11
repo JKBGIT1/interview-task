@@ -1,5 +1,5 @@
 # argocd
 
-The `apps` folder contains the ArgoCD applications deploying the applications in `k8s/web-apps`. I couldn't deploy the ArgoCD apps directly (in the `kustomization.yaml` together with the `deploy.yaml`), because the Helm Chart defined in this folder haven't deployed the CRDs yet. As a result, the FluxCD reconciliation has been failing. 
+The `apps` folder contains the ArgoCD applications that deploy the applications defined in `k8s/web-apps`. 
 
-As a workaround I'm deploying the ArgoCD CRDs separately referencing the https://raw.githubusercontent.com/argoproj/argo-cd/refs/tags/v3.3.0/manifests/crds/application-crd.yaml in the `kustomization.yaml` `resources`.
+The `deploy.yaml` deploys ArgoCD HelmRepository and HelmRelease (managed by FluxCD). I couldn't deploy the ArgoCD CRDs by HelmRelease because the ArgoCD applications defined in the `k8s/web-apps` uses the `argoproj.io/v1alpha1` Application. As a result, the FluxCD couldn't reconcile due to the missing CRD. As a workaround, I'm depoying the ArgoCD CRDs using the `crds.yaml`.
