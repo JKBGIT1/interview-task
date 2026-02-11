@@ -115,7 +115,7 @@ The show stopper https://github.com/hashicorp/vagrant/issues/13619 for TalosOS o
 
 ## Set up cluster
 
-Follow the steps below once you finished installation of all required tools to build the cluster.
+Follow the steps below once you have finished the installation of all required tools to build the cluster.
 
 0. Update the /etc/systemd/resolved.conf by adding
 
@@ -123,7 +123,7 @@ Follow the steps below once you finished installation of all required tools to b
 DNS=192.168.56.2
 ```
 
-1. `cd ./vagrant && vagrant up` - Vagrant creates VMs and sets up `/kubeone/kubeone.yaml` which will be used to spin up K8s. ATM, the downscaling doesn't work. You can scale up by changing values in `workers_count` and `masters_count`.
+1. `cd ./vagrant && vagrant up` - Vagrant creates VMs and sets up `/kubeone/kubeone.yaml` + `lbs/nginx/nginx.conf`.
 2. `cd ./kubeone && kubeone apply -m ./kubeone.yaml` - Spins up K8s cluster on spawned VMs from previous step.
 3. `kubectl get no --kubeconfig ./kubeone/brightpick-interview-task-kubeconfig`
 
@@ -136,13 +136,13 @@ worker-1   Ready    <none>          22m   v1.34.1
 worker-2   Ready    <none>          22m   v1.34.1
 ```
 
-4. You have to perform the initial deployment of FluxCD manually.
+4. You have to run the initial deployment of FluxCD manually.
 
 ```
 kustomize build ./k8s/infra/flux-system | kubectl create -f -
 ```
 
-If some applications aren't deployed, rerun the command above but using `kubeclt apply -f -`
+**NOTE:** If some applications fail to deploy, rerun the command above but this time using `kubeclt apply -f -` instead.
 
 Watch for the successful sync.
 
@@ -152,9 +152,9 @@ NAME    AGE   READY   STATUS
 infra   11m   True    Applied revision: feat/deploy-web-app-and-set-up-gitops@sha1:e3e6327d056d123d1a80cec55438a02b62b0202e
 ```
 
-It can take a while until the FluxCD deploys the applications in the `k8s/infra/`. In my case, it took around 6 minutes ever since I hit the `kubectl apply`.
+It can take a while until the FluxCD deploys the applications in the `k8s/infra/`. In my case, it took around 10 minutes ever since I ran `kubectl apply`.
 
-5. Sync ArgoCD has been deployed by FluxCD, you can port forward its dashboard
+5. Since ArgoCD has been deployed by FluxCD, you can port forward its dashboard
 
 ```
 kubectl port-forward service/argocd-server -n argocd 8080:443
@@ -167,35 +167,11 @@ kubectl port-forward service/argocd-server -n argocd 8080:443
 ```
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 ```
-8. Resolve the brightpick.app.test
+
+8. Access the application
 
 ```
-$ dig brightpick.app.test
-
-; <<>> DiG 9.18.39-0ubuntu0.22.04.2-Ubuntu <<>> brightpick.app.test
-;; global options: +cmd
-;; Got answer:
-;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 63523
-;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1
-
-;; OPT PSEUDOSECTION:
-; EDNS: version: 0, flags:; udp: 65494
-;; QUESTION SECTION:
-;brightpick.app.test.           IN      A
-
-;; ANSWER SECTION:
-brightpick.app.test.    30      IN      A       192.168.56.3
-
-;; Query time: 0 msec
-;; SERVER: 127.0.0.53#53(127.0.0.53) (UDP)
-;; WHEN: Wed Feb 11 19:07:32 CET 2026
-;; MSG SIZE  rcvd: 64
-```
-
-9. Access the application
-
-```
-$ curl https://brightpick.app.test
+$ curl -k https://brightpick.app.test
 <!DOCTYPE html>
 <html>
 <head>
@@ -223,38 +199,103 @@ Commercial support is available at
 
 ## How to debug
 
-If FluxCD doesn't deploy the applications in the `k8s/infra`, check the Kustomization, HelmRepositories and HelmReleases.
+If FluxCD doesn't deploy the applications in the `k8s/infra`, check the `kustomize-controller` logs.
 
 ```
-
+$ kubectl logs -l app=kustomize-controller -n flux-system
 ```
 
-Then check the `kustomize-controller` logs.
+Check the Kustomization, HelmReleases and HelmRepositories
 
 ```
-kubectl logs -l app=kustomize-controller -n flux-system
+$ kubectl get kustomizations,helmrelease,helmrepositories -A
+NAMESPACE     NAME                                              AGE   READY   STATUS
+flux-system   kustomization.kustomize.toolkit.fluxcd.io/infra   45m   True    Applied revision: main@sha1:bc30b8c7acd75d2bef50e3b844b27172cac1c5bf
+
+NAMESPACE   NAME                                                       AGE   READY   STATUS
+argocd      helmrelease.helm.toolkit.fluxcd.io/argocd                  35m   True    Helm install succeeded for release argocd/argocd.v1 with chart argo-cd@9.4.1
+linkerd     helmrelease.helm.toolkit.fluxcd.io/linkerd-control-plane   35m   True    Helm install succeeded for release linkerd/linkerd-control-plane.v1 with chart linkerd-control-plane@2026.1.4
+linkerd     helmrelease.helm.toolkit.fluxcd.io/linkerd-crds            35m   True    Helm install succeeded for release linkerd/linkerd-crds.v1 with chart linkerd-crds@2026.1.4
+linkerd     helmrelease.helm.toolkit.fluxcd.io/linkerd-viz             35m   True    Helm install succeeded for release linkerd/linkerd-viz.v1 with chart linkerd-viz@2026.1.4
+traefik     helmrelease.helm.toolkit.fluxcd.io/traefik                 35m   True    Helm install succeeded for release traefik/traefik.v1 with chart traefik@38.0.2
+
+NAMESPACE   NAME                                                   URL                                    AGE   READY   STATUS
+argocd      helmrepository.source.toolkit.fluxcd.io/argo-helm      https://argoproj.github.io/argo-helm   35m   True    stored artifact: revision 'sha256:8da3bfa0f2febbd3a15d226fb5be3da0338ceb482c14d5ccf5394e42a00de5ab'
+linkerd     helmrepository.source.toolkit.fluxcd.io/linkerd-edge   https://helm.linkerd.io/edge           35m   True    stored artifact: revision 'sha256:ae18982ca17304769898141e7cb953ed268d75d7f9ee5cb3e3a8dd6029ecd0b2'
+traefik     helmrepository.source.toolkit.fluxcd.io/traefik        https://traefik.github.io/charts       35m   True    stored artifact: revision 'sha256:48ae413ba469f6c08aa9187207ab9096d840f7a5df748d36a8452c89fd21fac2'
 ```
 
+If you can't access the application, try to resolve the brightpick.app.test
+
+```
+$ dig brightpick.app.test
+
+; <<>> DiG 9.18.39-0ubuntu0.22.04.2-Ubuntu <<>> brightpick.app.test
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 63523
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 65494
+;; QUESTION SECTION:
+;brightpick.app.test.           IN      A
+
+;; ANSWER SECTION:
+brightpick.app.test.    30      IN      A       192.168.56.3
+
+;; Query time: 0 msec
+;; SERVER: 127.0.0.53#53(127.0.0.53) (UDP)
+;; WHEN: Wed Feb 11 19:07:32 CET 2026
+;; MSG SIZE  rcvd: 64
+```
+
+Ensure the app in the `nginx-web-app` namespace is running.
+
+```
+$ k get po -n nginx-web-app 
+NAME                             READY   STATUS    RESTARTS   AGE
+nginx-web-app-5bb4bc9fb9-98gn5   1/1     Running   0          5m53s
+```
+
+Check the pods in the `traefik` namespace.
+
+```
+$ kubectl get po -n traefik 
+NAME            READY   STATUS    RESTARTS   AGE
+traefik-k5s7n   1/1     Running   0          113s
+traefik-lszsb   1/1     Running   0          113s
+```
+
+Check the NGINX container on LB VM.
+
+```
+$ vagrant ssh lb-1
+$ sudo su
+$ docker ps
+CONTAINER ID   IMAGE                      COMMAND                  CREATED          STATUS          PORTS                                                                                                                       NAMES
+ddbb968b7f9a   nginx:1.29.5-alpine-perl   "/docker-entrypoint.…"   10 minutes ago   Up 10 minutes   0.0.0.0:80->80/tcp, [::]:80->80/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp, 0.0.0.0:6443->6443/tcp, [::]:6443->6443/tcp   lb
+```
 
 ## How to scale up the worker nodes
 
 1. Increase the `workers_count` variable in the `vagrant/Vagrantfile`.
 2. `vagrant up`
-2. `kubeone apply -m ./kubeone/kubeone.yaml`
+3. `vagrant provision` to recreate the NGINX container on LB.
+3. `kubeone apply -m ./kubeone/kubeone.yaml`
 
 ## How to scale down the worker nodes
 
 Unfortunately, in this case, you have to do a bit more manual work with precision.
 
-1. Remove the last item in the `staticWorkers.hosts` in the `kubeone/kubeone.yaml`.
-2. `kubectl drain <lastly-joined-worker-node> --ignore-daemonsets --delete-emptydir-data`
-3. `kubectl delete <lastly-joined-worker-node>`
-4. `vagrant ssh <lastly-provisioned-worker-node>`
-    - 4.1. `sudo kubeadm reset`
-5. `kubeone apply -m ./kubeone/kubeone.yaml` (just in case)
-6. `vagrant destroy <lastly-provisioned-worker-node>`
-7. Decrease the `workers_count` variable in the `vagrant/Vagrantfile` by 1
-8. `vagrant provision` (to update the `kubeone/kubeone.yaml` + `lbs/nginx/nginx.conf` and restart the nginx on LB VM)
+1. `kubectl drain <lastly-joined-worker-node> --ignore-daemonsets --delete-emptydir-data`
+2. `kubectl delete no <lastly-joined-worker-node>`
+3. `vagrant ssh <lastly-provisioned-worker-node>`
+    - 3.1. `sudo kubeadm reset`
+4. `vagrant destroy <lastly-provisioned-worker-node>`
+5. Decrease the `workers_count` variable in the `vagrant/Vagrantfile` by 1
+6. `vagrant provision` (to update the `kubeone/kubeone.yaml` + `lbs/nginx/nginx.conf` and restart the nginx on LB VM)
+7. `kubeone apply -m ./kubeone/kubeone.yaml` (just in case)
 
 ## How to scale up/down the master nodes
 
