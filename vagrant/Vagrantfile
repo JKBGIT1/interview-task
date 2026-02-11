@@ -159,7 +159,7 @@ EOF
         apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
         systemctl enable docker
         systemctl start docker
-        cd /opt/lbs && docker compose up -d
+        cd /opt/lbs && docker compose up -d --force-recreate
 
         # setup basic firewall rules with ufw allowing only HTTP, HTTPS and SSH
         ufw default deny incoming
