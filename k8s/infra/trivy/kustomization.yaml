@@ -1,2 +1,9 @@
 resources:
 - deploy.yaml
+
+patches:
+- path: patch-operator-config.yaml
+  target:
+    kind: ConfigMap
+    name: trivy-operator-config
+    namespace: trivy-system
