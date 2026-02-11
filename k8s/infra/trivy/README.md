@@ -17,3 +17,5 @@ You can pick one and run the command below to see the details.
 ```
 kubeclt describe vulnerabilityreports.aquasecurity.github.io -n <vulnerability-report-namespace> <vulnerability-report-name>
 ```
+
+The trivy operator is deployed by FluxCD
